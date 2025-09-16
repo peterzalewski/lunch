@@ -6,13 +6,20 @@ package main
 
 import (
 	"bufio"
+	"encoding/csv"
 	"fmt"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
 	"github.com/adrg/xdg"
+)
+
+var (
+	dateRe             = regexp.MustCompile(`^(?P<date>\S+ \d+; \d+\?\S+)\s*(?P<note>.+)?$`)
+	excessWhitespaceRe = regexp.MustCompile(`(?m)\s{2,}`)
 )
 
 type LunchConfig struct {
@@ -24,6 +31,12 @@ type LunchConfig struct {
 type LunchOption struct {
 	name string
 	path string
+}
+
+type DailyMenu struct {
+	date string
+	note string
+	menu []string
 }
 
 func (lc LunchConfig) UrlForOption(lo LunchOption) string {
@@ -89,15 +102,52 @@ func (lc LunchConfig) DataFor(lo LunchOption) (string, error) {
 }
 
 func main() {
-	highSchoolColdLunch := LunchOption{
+	highSchoolCold := LunchOption{
 		name: "High School Express Cold Lunch Menu",
 		path: "High-School-Express-Cold-Lunch-Menu",
+	}
+	preK8ExpressCold := LunchOption{
+		name: "Pre-K - 8 Express Cold Lunch Menu",
+		path: "Pre-K---8-Express-Cold-Lunch-Menu",
 	}
 	config := &LunchConfig{
 		schoolYear: "2025-2026",
 		basePath:   "https://www.schools.nyc.gov/docs/default-source/school-menus/",
-		options:    []LunchOption{highSchoolColdLunch},
+		options:    []LunchOption{highSchoolCold, preK8ExpressCold},
 	}
 
-	fmt.Println(config.DataFor(highSchoolColdLunch))
+	data, err := config.DataFor(preK8ExpressCold)
+	if err != nil {
+		panic(err)
+	}
+
+	reader := csv.NewReader(strings.NewReader(data))
+	records, err := reader.ReadAll()
+	if err != nil {
+		panic(err)
+	}
+
+	for _, record := range records[1:] {
+		if record[0] == "Daily Offerings" {
+			continue
+		}
+
+		match := dateRe.FindStringSubmatch(record[0])
+		if match == nil {
+			panic(fmt.Sprintf("invalid record: %s", record[0]))
+		}
+
+		date, err := time.Parse("January 2; 2006?Monday", match[dateRe.SubexpIndex("date")])
+		if err != nil {
+			panic(err)
+		}
+
+		menu := make([]string, 0)
+		for _, entry := range strings.Split(record[1], "|") {
+			entry = strings.TrimSpace(excessWhitespaceRe.ReplaceAllString(entry, " "))
+			menu = append(menu, entry)
+		}
+
+		fmt.Printf("%s: %s\n", date, strings.Join(menu, ", "))
+	}
 }
