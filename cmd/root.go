@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bufio"
+	"context"
 	"encoding/csv"
 	"fmt"
 	"io"
@@ -19,7 +20,28 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "lunch",
 	Short: "Display the NYS public school menu",
-	RunE:  root,
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		f, err := os.Open("config.yaml")
+		if err != nil {
+			return err
+		}
+
+		data, err := io.ReadAll(f)
+		if err != nil {
+			return err
+		}
+
+		var config LunchConfig
+		err = yaml.Unmarshal(data, &config)
+		if err != nil {
+			return err
+		}
+
+		cmd.SetContext(context.WithValue(cmd.Context(), lunchConfigKey{}, &config))
+
+		return nil
+	},
+	RunE: root,
 }
 
 var (
@@ -27,6 +49,8 @@ var (
 	excessWhitespaceRe = regexp.MustCompile(`(?m)\s{2,}`)
 	ErrInvalidRecord   = "invalid lunch record"
 )
+
+type lunchConfigKey struct{}
 
 type LunchConfig struct {
 	SchoolYear string        `yaml:"schoolYear"`
@@ -108,20 +132,9 @@ func (lc LunchConfig) DataFor(lo LunchOption) (string, error) {
 }
 
 func root(cmd *cobra.Command, args []string) error {
-	f, err := os.Open("config.yaml")
-	if err != nil {
-		return err
-	}
-
-	configData, err := io.ReadAll(f)
-	if err != nil {
-		return err
-	}
-
-	var config LunchConfig
-	err = yaml.Unmarshal(configData, &config)
-	if err != nil {
-		return err
+	config, ok := cmd.Context().Value(lunchConfigKey{}).(*LunchConfig)
+	if !ok {
+		return fmt.Errorf("could not retrieve config")
 	}
 
 	data, err := config.DataFor(config.Options[0])
