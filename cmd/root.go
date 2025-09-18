@@ -3,6 +3,7 @@ package cmd
 import (
 	"bufio"
 	"context"
+	"encoding/csv"
 	"fmt"
 	"io"
 	"net/http"
@@ -62,9 +63,9 @@ type LunchOption struct {
 }
 
 type DailyMenu struct {
-	date string
-	note string
-	menu []string
+	Date time.Time
+	Note string
+	Menu []string
 }
 
 func (lc LunchConfig) UrlForOption(lo LunchOption) string {
@@ -77,14 +78,9 @@ func (lc LunchConfig) KeyForOption(lo LunchOption) string {
 	return fmt.Sprintf("%s-%s-%s.csv", lc.SchoolYear, strings.ToLower(now.Month().String()), lo.Path)
 }
 
-// TODO: Should return []struct of some sort
-func (lc LunchConfig) DataFor(lo LunchOption) (string, error) {
+func pullCacheableUrl(url string, cacheKey string) (string, error) {
 	var builder strings.Builder
 
-	// Get cache key
-	// If it exists in the cache, return
-	// Else download the file, cache, return
-	cacheKey := lc.KeyForOption(lo)
 	cacheFile, err := xdg.CacheFile(fmt.Sprintf("lunch/%s", cacheKey))
 	if err != nil {
 		return "", err
@@ -103,8 +99,7 @@ func (lc LunchConfig) DataFor(lo LunchOption) (string, error) {
 		}
 	} else {
 		// TODO: Should probably be its own function
-		lunchUrl := lc.UrlForOption(lo)
-		resp, err := http.Get(lunchUrl)
+		resp, err := http.Get(url)
 		if err != nil {
 			return "", err
 		}
@@ -127,6 +122,62 @@ func (lc LunchConfig) DataFor(lo LunchOption) (string, error) {
 	}
 
 	return builder.String(), nil
+}
+
+// TODO: Should return []struct of some sort
+func (lc LunchConfig) GetDailyMenu(lo LunchOption) ([]DailyMenu, error) {
+	lunchUrl := lc.UrlForOption(lo)
+	cacheKey := lc.KeyForOption(lo)
+	data, err := pullCacheableUrl(lunchUrl, cacheKey)
+	if err != nil {
+		return nil, err
+	}
+
+	reader := csv.NewReader(strings.NewReader(data))
+	records, err := reader.ReadAll()
+	if err != nil {
+		return nil, err
+	}
+
+	menus := make([]DailyMenu, 0)
+	for _, record := range records[1:] {
+		if record[0] == "Daily Offerings" {
+			continue
+		}
+
+		menu, err := NewDailyMenu(record)
+		if err != nil {
+			return nil, err
+		}
+
+		menus = append(menus, *menu)
+	}
+
+	return menus, nil
+}
+
+func NewDailyMenu(record []string) (*DailyMenu, error) {
+	daily := &DailyMenu{}
+	match := dateRe.FindStringSubmatch(record[0])
+	if match == nil {
+		return nil, fmt.Errorf(`record "%s": %w`, record[0], ErrInvalidRecord)
+	}
+
+	date, err := time.Parse("January 2; 2006?Monday", match[dateRe.SubexpIndex("date")])
+	if err != nil {
+		return nil, err
+	}
+
+	menu := make([]string, 0)
+	for _, entry := range strings.Split(record[1], "|") {
+		entry = strings.TrimSpace(excessWhitespaceRe.ReplaceAllString(entry, " "))
+		menu = append(menu, entry)
+	}
+
+	daily.Date = date
+	daily.Menu = menu
+
+	return daily, nil
 }
 
 func init() {
