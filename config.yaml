@@ -1,0 +1,7 @@
+schoolYear: 2025-2026
+basePath: https://www.schools.nyc.gov/docs/default-source/school-menus/
+options:
+  - name: High School Express Cold Lunch Menu
+    path: High-School-Express-Cold-Lunch-Menu
+  - name: Pre-K - 8 Express Cold Lunch Menu
+    path: Pre-K---8-Express-Cold-Lunch-Menu

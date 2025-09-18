@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/csv"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"regexp"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/adrg/xdg"
+	"github.com/goccy/go-yaml"
 	"github.com/spf13/cobra"
 )
 
@@ -27,14 +29,14 @@ var (
 )
 
 type LunchConfig struct {
-	schoolYear string
-	basePath   string
-	options    []LunchOption
+	SchoolYear string        `yaml:"schoolYear"`
+	BasePath   string        `yaml:"basePath"`
+	Options    []LunchOption `yaml:"options"`
 }
 
 type LunchOption struct {
-	name string
-	path string
+	Name string `yaml:"name"`
+	Path string `yaml:"path"`
 }
 
 type DailyMenu struct {
@@ -45,12 +47,12 @@ type DailyMenu struct {
 
 func (lc LunchConfig) UrlForOption(lo LunchOption) string {
 	now := time.Now()
-	return fmt.Sprintf("%s/%s/%s/%s.csv", lc.basePath, lc.schoolYear, strings.ToLower(now.Month().String()), lo.path)
+	return fmt.Sprintf("%s/%s/%s/%s.csv", lc.BasePath, lc.SchoolYear, strings.ToLower(now.Month().String()), lo.Path)
 }
 
 func (lc LunchConfig) KeyForOption(lo LunchOption) string {
 	now := time.Now()
-	return fmt.Sprintf("%s-%s-%s.csv", lc.schoolYear, strings.ToLower(now.Month().String()), lo.path)
+	return fmt.Sprintf("%s-%s-%s.csv", lc.SchoolYear, strings.ToLower(now.Month().String()), lo.Path)
 }
 
 // TODO: Should return []struct of some sort
@@ -106,21 +108,23 @@ func (lc LunchConfig) DataFor(lo LunchOption) (string, error) {
 }
 
 func root(cmd *cobra.Command, args []string) error {
-	highSchoolCold := LunchOption{
-		name: "High School Express Cold Lunch Menu",
-		path: "High-School-Express-Cold-Lunch-Menu",
-	}
-	preK8ExpressCold := LunchOption{
-		name: "Pre-K - 8 Express Cold Lunch Menu",
-		path: "Pre-K---8-Express-Cold-Lunch-Menu",
-	}
-	config := &LunchConfig{
-		schoolYear: "2025-2026",
-		basePath:   "https://www.schools.nyc.gov/docs/default-source/school-menus/",
-		options:    []LunchOption{highSchoolCold, preK8ExpressCold},
+	f, err := os.Open("config.yaml")
+	if err != nil {
+		return err
 	}
 
-	data, err := config.DataFor(preK8ExpressCold)
+	configData, err := io.ReadAll(f)
+	if err != nil {
+		return err
+	}
+
+	var config LunchConfig
+	err = yaml.Unmarshal(configData, &config)
+	if err != nil {
+		return err
+	}
+
+	data, err := config.DataFor(config.Options[0])
 	if err != nil {
 		return err
 	}
