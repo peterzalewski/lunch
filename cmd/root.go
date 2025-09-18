@@ -23,6 +23,7 @@ var rootCmd = &cobra.Command{
 var (
 	dateRe             = regexp.MustCompile(`^(?P<date>\S+ \d+; \d+\?\S+)\s*(?P<note>.+)?$`)
 	excessWhitespaceRe = regexp.MustCompile(`(?m)\s{2,}`)
+	ErrInvalidRecord   = "invalid lunch record"
 )
 
 type LunchConfig struct {
@@ -121,13 +122,13 @@ func root(cmd *cobra.Command, args []string) error {
 
 	data, err := config.DataFor(preK8ExpressCold)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	reader := csv.NewReader(strings.NewReader(data))
 	records, err := reader.ReadAll()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	for _, record := range records[1:] {
@@ -137,12 +138,12 @@ func root(cmd *cobra.Command, args []string) error {
 
 		match := dateRe.FindStringSubmatch(record[0])
 		if match == nil {
-			panic(fmt.Sprintf("invalid record: %s", record[0]))
+			return fmt.Errorf(`record "%s": %w`, record[0], ErrInvalidRecord)
 		}
 
 		date, err := time.Parse("January 2; 2006?Monday", match[dateRe.SubexpIndex("date")])
 		if err != nil {
-			panic(err)
+			return err
 		}
 
 		menu := make([]string, 0)
@@ -153,6 +154,7 @@ func root(cmd *cobra.Command, args []string) error {
 
 		fmt.Printf("%s: %s\n", date, strings.Join(menu, ", "))
 	}
+
 	return nil
 }
 
