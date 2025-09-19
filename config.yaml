@@ -1,7 +1,59 @@
 schoolYear: 2025-2026
 basePath: https://www.schools.nyc.gov/docs/default-source/school-menus/
 options:
-  - name: High School Express Cold Lunch Menu
-    path: High-School-Express-Cold-Lunch-Menu
-  - name: Pre-K - 8 Express Cold Lunch Menu
-    path: Pre-K---8-Express-Cold-Lunch-Menu
+  - path: High-School-Express-Cold-Lunch-Menu
+    name: High School Express Cold Lunch Menu
+
+  - path: high-school-express-hot-lunch-menu
+    name: High School Express Hot Lunch Menu
+
+  - path: high-school-lunch-menu
+    name: High School Lunch Menu
+
+  - path: Infant-Toddler-Lunch-Menu
+    name: Infant Toddler Lunch Menu
+
+  - path: pre-k---8-express-hot-lunch-menu-with-halal-option
+    name: Pre-K - 8 Express Hot Lunch Menu With Halal Option
+
+  - path: Pre-K---8-Express-Cold-Lunch-Menu
+    name: Pre-K - 8 Express Cold Lunch Menu
+
+  - path: pre-k---8-express-hot-lunch-menu
+    name: Pre-K - 8 Express Hot Lunch Menu
+
+  - path: pre-k---8-lunch-menu
+    name: Pre-K - 8 Lunch Menu
+
+  - path: Puree-Lunch-Menu
+    name: Puree Lunch Menu
+
+  - path: saturday-cold-lunch-menu
+    name: Saturday Cold Lunch Menu
+
+  - path: saturday-hot-lunch-menu
+    name: Saturday Hot Lunch Menu
+
+  - path: pre-k---8-vegetarian-lunch-menu
+    name: Pre-K - 8 Vegetarian Lunch Menu
+
+  - path: pre-k---8-lunch-menu-with-halal-option
+    name: Pre-K - 8 Lunch Menu With Halal Option
+
+  - path: pre-k---8-express-hot-lunch-menu-with-halal-option
+    name: Pre-K - 8 Express Hot Lunch Menu With Halal Option
+
+  - path: pre-k---8-express-hot-lunch-menu-with-halal-option
+    name: Pre-K - 8 Express Hot Lunch Menu With Halal Option
+
+  - path: high-school-lunch-menu-with-halal-option
+    name: High School Lunch Menu With Halal Option
+
+  - path: high-school-express-hot-lunch-menu-with-halal-option
+    name: High School Express Hot Lunch Menu With Halal Option
+
+  - path: food-court-menu
+    name: Food Court Menu
+
+  - path: food-court-menu-with-halal-option
+    name: Food Court Menu With Halal Option

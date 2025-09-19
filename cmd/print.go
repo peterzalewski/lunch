@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"math/rand/v2"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -19,7 +20,8 @@ func printMonth(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("could not retrieve config")
 	}
 
-	menus, err := config.GetDailyMenu(config.Options[0])
+	option := config.Options[rand.IntN(len(config.Options))]
+	menus, err := config.GetDailyMenu(option)
 	if err != nil {
 		return err
 	}
