@@ -8,18 +8,34 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var SchoolMonths = [...]string{"september", "october", "november", "december", "january", "february", "march", "april", "may", "june"}
+
 func printMonth(cmd *cobra.Command, args []string) error {
 	config, ok := cmd.Context().Value(lunchConfigKey{}).(*LunchConfig)
 	if !ok {
 		return fmt.Errorf("could not retrieve config")
 	}
 
-	month, err := cmd.Flags().GetString("month")
+	monthIdx := int(time.Now().Month())
+	if monthIdx >= 9 {
+		monthIdx -= 9
+	} else {
+		monthIdx += 3
+	}
+
+	next, err := cmd.Flags().GetBool("next")
 	if err != nil {
 		return err
-	} else if month == "" {
-		month = strings.ToLower(time.Now().Month().String())
 	}
+
+	if next {
+		if monthIdx >= len(SchoolMonths) {
+			return fmt.Errorf("no school menu after june")
+		}
+		monthIdx += 1
+	}
+
+	month := SchoolMonths[monthIdx]
 
 	option := config.Options[0]
 	menus, err := config.GetDailyMenu(option, month)
@@ -27,6 +43,7 @@ func printMonth(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	fmt.Printf("MENU for %s\n\n", strings.ToTitle(month))
 	for _, menu := range menus {
 		fmt.Printf("%s: %s\n", menu.Date, strings.Join(menu.Menu, ", "))
 	}
@@ -41,7 +58,7 @@ func NewPrintCmd() *cobra.Command {
 		RunE:  printMonth,
 	}
 
-	printCmd.Flags().StringP("month", "m", "", "Which month to print (defaults to current)")
+	printCmd.Flags().BoolP("next", "n", false, "Print next month's menu")
 
 	return printCmd
 }
