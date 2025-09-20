@@ -2,17 +2,11 @@ package cmd
 
 import (
 	"fmt"
-	"math/rand/v2"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 )
-
-var printCmd = &cobra.Command{
-	Use:   "print",
-	Short: "Print a month of NYS public school meals",
-	RunE:  printMonth,
-}
 
 func printMonth(cmd *cobra.Command, args []string) error {
 	config, ok := cmd.Context().Value(lunchConfigKey{}).(*LunchConfig)
@@ -20,8 +14,15 @@ func printMonth(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("could not retrieve config")
 	}
 
-	option := config.Options[rand.IntN(len(config.Options))]
-	menus, err := config.GetDailyMenu(option)
+	month, err := cmd.Flags().GetString("month")
+	if err != nil {
+		return err
+	} else if month == "" {
+		month = strings.ToLower(time.Now().Month().String())
+	}
+
+	option := config.Options[0]
+	menus, err := config.GetDailyMenu(option, month)
 	if err != nil {
 		return err
 	}
@@ -31,4 +32,16 @@ func printMonth(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+func NewPrintCmd() *cobra.Command {
+	var printCmd = &cobra.Command{
+		Use:   "print",
+		Short: "Print a month of NYS public school meals",
+		RunE:  printMonth,
+	}
+
+	printCmd.Flags().StringP("month", "m", "", "Which month to print (defaults to current)")
+
+	return printCmd
 }

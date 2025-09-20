@@ -68,14 +68,12 @@ type DailyMenu struct {
 	Menu []string
 }
 
-func (lc LunchConfig) UrlForOption(lo LunchOption) string {
-	now := time.Now()
-	return fmt.Sprintf("%s/%s/%s/%s.csv", lc.BasePath, lc.SchoolYear, strings.ToLower(now.Month().String()), lo.Path)
+func (lc LunchConfig) UrlForOption(lo LunchOption, month string) string {
+	return fmt.Sprintf("%s/%s/%s/%s.csv", lc.BasePath, lc.SchoolYear, month, lo.Path)
 }
 
-func (lc LunchConfig) KeyForOption(lo LunchOption) string {
-	now := time.Now()
-	return fmt.Sprintf("%s-%s-%s.csv", lc.SchoolYear, strings.ToLower(now.Month().String()), lo.Path)
+func (lc LunchConfig) KeyForOption(lo LunchOption, month string) string {
+	return fmt.Sprintf("%s-%s-%s.csv", lc.SchoolYear, month, lo.Path)
 }
 
 func pullCacheableUrl(url string, cacheKey string) (string, error) {
@@ -124,10 +122,9 @@ func pullCacheableUrl(url string, cacheKey string) (string, error) {
 	return builder.String(), nil
 }
 
-// TODO: Should return []struct of some sort
-func (lc LunchConfig) GetDailyMenu(lo LunchOption) ([]DailyMenu, error) {
-	lunchUrl := lc.UrlForOption(lo)
-	cacheKey := lc.KeyForOption(lo)
+func (lc LunchConfig) GetDailyMenu(lo LunchOption, month string) ([]DailyMenu, error) {
+	lunchUrl := lc.UrlForOption(lo, month)
+	cacheKey := lc.KeyForOption(lo, month)
 	data, err := pullCacheableUrl(lunchUrl, cacheKey)
 	if err != nil {
 		return nil, err
@@ -181,7 +178,7 @@ func NewDailyMenu(record []string) (*DailyMenu, error) {
 }
 
 func init() {
-	rootCmd.AddCommand(printCmd)
+	rootCmd.AddCommand(NewPrintCmd())
 }
 
 func Execute() error {
