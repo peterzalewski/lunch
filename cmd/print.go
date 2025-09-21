@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
 )
 
@@ -37,7 +38,25 @@ func printMonth(cmd *cobra.Command, args []string) error {
 
 	month := SchoolMonths[monthIdx]
 
-	option := config.Options[0]
+	var option LunchOption
+	options := make([]huh.Option[LunchOption], 0)
+	for _, o := range config.Options {
+		options = append(options, huh.NewOption[LunchOption](o.Name, o))
+	}
+	form := huh.NewForm(
+		huh.NewGroup(
+			huh.NewSelect[LunchOption]().
+				Description("Choose a menu").
+				Options(options...).
+				Height(10).
+				Value(&option),
+		),
+	)
+	err = form.Run()
+	if err != nil {
+		return err
+	}
+
 	menus, err := config.GetDailyMenu(option, month)
 	if err != nil {
 		return err
